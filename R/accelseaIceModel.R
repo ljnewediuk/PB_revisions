@@ -9,8 +9,9 @@ library(sf)
 age_dat <- readRDS('output/new_clock_ages.rds') %>%
   rename(BearID = id) %>%
   mutate(SampleYear = as.numeric(substr(YMD, 1, 4))) %>%
-  # For each sample, make a list of the years between the bear's YOB and its
-  # date of sample
+  # For each sample, make a list of the years between the bear's year of
+  # birth and its date of sample (these are the days it was alive before the
+  # sample)
   rowwise() %>%
   mutate(LiveYears = list(seq(from = Born, to = SampleYear, by = 1)))
 
@@ -25,12 +26,22 @@ age_season_dat <- age_dat %>%
   select(BearID, sampleId, Population, ageAccel, LiveYears) %>%
   left_join(season_dat, relationship = 'many-to-many') %>%
   filter(Year %in% LiveYears) %>%
+  group_by(sampleId) %>%
+  # Summarize mean length of ice free seasons from the bear's birth year to its
+  # sample date
+  summarize(BearID = unique(BearID),
+            iceFreeLength = mean(iceFreeLength), ageAccel = unique(ageAccel),
+            Population = unique(Population))
+
+# Mean age acceleration by Bear ID (to avoid multiple samples per individual
+# and fit simple linear model)
+age_season_means <- age_season_dat %>%
   group_by(BearID) %>%
   summarize(iceFreeLength = mean(iceFreeLength), ageAccel = mean(ageAccel),
             Population = unique(Population))
 
 # Plot age by ice-free season length
-  age_season_dat %>%
+  age_season_means %>%
     ggplot(aes(x = iceFreeLength, y = ageAccel)) +
     geom_point(aes(colour = Population)) +
     geom_smooth(method = 'lm', colour = 'black', fill = 'black') +
@@ -48,11 +59,11 @@ age_season_dat <- age_dat %>%
           legend.text = element_text(size = 15, colour = 'black'),
           legend.key = element_rect(linewidth = 0.5)
     ) +
-    scale_color_brewer(palette = 'Set3') +
+    scale_color_viridis_d() +
     labs(x = 'Mean length of ice-free season during lifetime (days)',
          y = 'Epigenetic age acceleration')
   
 # Fit linear model
-summary(lm(ageAccel ~ iceFreeLength, data = age_season_dat))
+summary(lm(ageAccel ~ iceFreeLength, data = age_season_means))
 
 

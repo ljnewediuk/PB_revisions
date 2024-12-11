@@ -10,13 +10,14 @@
 library(tidyverse)
 library(glmnet)
 
-# Load functions
+# Load functions needed for stability selection
 source('functions/stabSelFunctions.R')
 
 # 2 - Load data ====
 
 # Normalized betas from all populations (with sites removed that don't align to 
 # the genome and low-quality samples removed)
+# This file is available through MS OneDrive as it's too large to push to GitHub.
 meth_dat <- readRDS('input/samples_new.rds')
 
 # Names of cpg sites
@@ -112,23 +113,11 @@ df_out <- data.frame(cpg_names = cpg_names, pi_select = out)
 select_prob <- df_out %>%
   arrange(desc(pi_select))
 
-# Selection probability threshold
-thresh <- numeric(10)
-for (i in 1:10) {
-  thresh[i] <- finding_thresh(q = q_stab, p = length(cpg_names), E_v = i)
-}
+# Find selection probability threshold (max 2 false discoveries; threshold = E_v)
+thresh <- finding_thresh(q = q_stab, p = length(cpg_names), E_v = 2)
 
-n_cpgs <- numeric(10)
-for (i in 1:10) {
-  n_cpgs[i] <- nrow(select_prob[which(select_prob$pi_select > thresh[i]),])
-}
-
-# Create table of thresholds (thresh) allowing for a maximum of n false 
-# discoveries (E_v) with n_cpgs. 5 sites are stably predictive.
-table <- data.frame(
-  EV = c(1:10), 
-  thresh = thresh,
-  n_cpgs = n_cpgs)
+# Number of stably predictive CpGs (5)
+n_cpgs <- nrow(select_prob[which(select_prob$pi_select > thresh),])
 
 # Fit clock with top 5 stably-selected CpGs
 i <- 5
@@ -139,6 +128,7 @@ preds <- test_dat %>%
   mutate(agePred = mod_best$data$agePredict) %>%
   select(sampleId:Population, agePred)
 
+# Add residuals (age acceleration)
 preds$ageAccel <- lm(agePred ~ age, data = preds)$resid
 
 # Plot the clock
