@@ -17,9 +17,7 @@ source('functions/stabSelFunctions.R')
 
 # Normalized betas from all populations (with sites removed that don't align to 
 # the genome and low-quality samples removed)
-meth_dat <- bind_rows(readRDS('input/beaufort_subpops.rds'), 
-                      readRDS('input/spatial_subpops.rds'),
-                      readRDS('input/WH_subpop.rds'))
+meth_dat <- readRDS('input/samples_new.rds')
 
 # Names of cpg sites
 cpg_names <- meth_dat %>%
