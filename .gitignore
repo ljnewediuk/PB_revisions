@@ -10,6 +10,9 @@
 .Ruserdata
 .DS_Store
 
+# Large files
+input/samples_new.rds
+
 # Example code in package build process
 *-Ex.R
 
