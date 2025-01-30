@@ -12,6 +12,9 @@
 
 # Large files
 input/samples_new.rds
+output/bootstrap_clock_metrics.rds
+output/bootstrap_age_birth_draws.rds
+output/bootstrap_posterior_pred.rds
 
 # Example code in package build process
 *-Ex.R
